@@ -13,7 +13,9 @@
   - کد پایتون تقریباً مستقیم قابل استفاده است (همان معماری، همان `state.py`/`commands.py`)،
   - رندر Canvas آن (`kivy.graphics`) برای ربات هولوگرافیک procedural کاملاً مناسب است،
   - انیمیشن نرم با `kivy.animation.Animation` (بدون Teleport) بومی پشتیبانی می‌شود،
-  - `buildozer android debug` مستقیماً APK می‌سازد — ساده‌ترین مسیر برای v1.
+  - `python-for-android` (بدون واسطه‌ی Buildozer یا Android Studio) مستقیماً یک پروژه‌ی
+    Gradle می‌سازد و با Android SDK/NDK آن را کامپایل می‌کند — ساده‌ترین مسیر استاندارد
+    برای v1 (جزئیات در بخش «ساخت APK» پایین‌تر).
 
 ## معماری (همان الگوی نسخه ویندوز)
 
@@ -91,64 +93,75 @@ python main.py
 
 ---
 
-## ۲) ساخت APK با Buildozer
+## ۲) ساخت APK با `build_apk.sh` (python-for-android + Gradle + Android SDK — بدون Buildozer، بدون Android Studio)
 
-⚠️ **مهم:** Buildozer به‌صورت رسمی فقط روی **Linux** کار می‌کند. اگر ویندوز دارید،
-از **WSL2 (Ubuntu)** استفاده کنید، یا از روش شماره ۳ (GitHub Actions، بدون نیاز به Linux
-محلی) استفاده کنید.
+این پروژه دیگر از Buildozer استفاده نمی‌کند. اسکریپت `build_apk.sh` مستقیماً از
+**python-for-android (p4a)** استفاده می‌کند — همان ابزاری که Buildozer هم زیرِ پوستِ
+خودش صدا می‌زد، فقط این‌بار مستقیم و بدون لایه‌ی اضافه. p4a یک پروژه‌ی **Gradle** واقعی
+می‌سازد و با **Android SDK + NDK** آن را کامپایل می‌کند — دقیقاً همان توالی استاندارد
+Gradle + Android SDK، بدون Buildozer و بدون نیاز به نصب Android Studio.
 
-### نصب پیش‌نیازها (Ubuntu / WSL2)
+⚠️ فقط روی **Linux** کار می‌کند (یا **WSL2 (Ubuntu)** روی ویندوز). macOS معمولاً کار
+می‌کند ولی رسماً پشتیبانی نمی‌شود.
+
+### نصب پیش‌نیازهای سیستم (Ubuntu / WSL2)
 
 ```bash
 sudo apt update
-sudo apt install -y python3-pip python3-venv git zip unzip openjdk-17-jdk \
-    build-essential libssl-dev libffi-dev python3-dev autoconf libtool pkg-config
-pip install --upgrade buildozer cython==0.29.36
+sudo apt install -y openjdk-17-jdk python3 python3-pip python3-venv git unzip zip \
+    build-essential autoconf automake libtool pkg-config zlib1g-dev \
+    libncurses5-dev libffi-dev libssl-dev
 ```
 
 ### ساخت APK
 
 ```bash
 cd nova_android
-buildozer android debug
+chmod +x build_apk.sh
+./build_apk.sh
 ```
+
+اسکریپت به‌ترتیب:
+
+1. Android SDK cmdline-tools را (اگر از قبل نیست) دانلود می‌کند.
+2. با `sdkmanager` این‌ها را نصب می‌کند: `platform-tools`، `platforms;android-34`،
+   `build-tools;34.0.0`، `ndk;25.2.9519653` (همان نسخه‌هایی که پروژه از اول هدف گرفته بود).
+3. `python-for-android` و `Cython` را در یک venv مجزا (`.build-venv/`) نصب می‌کند —
+   این‌ها فقط ابزار build هستند، داخل APK نهایی قرار نمی‌گیرند.
+4. دستور `p4a apk` را با تنظیمات دقیقاً معادل تنظیمات قبلی (permissions، package name،
+   requirements، orientation، minSDK/targetSDK، معماری‌های arm64-v8a و armeabi-v7a) اجرا
+   می‌کند — این همان جایی است که p4a پروژه‌ی Gradle را می‌سازد و Gradle را صدا می‌زند.
+5. فایل `.apk` نهایی را در `dist/` کپی می‌کند.
 
 نکات مهم:
 
-- **بار اول** Buildozer به‌صورت خودکار Android SDK و Android NDK را دانلود و نصب می‌کند
-  (چند گیگابایت، نیاز به اینترنت پایدار) — این کار می‌تواند **۲۰ تا ۴۵ دقیقه** طول بکشد.
-  بارهای بعدی خیلی سریع‌تر است چون همه‌چیز کش می‌شود.
-- خروجی نهایی در مسیر `bin/nova-0.1.0-arm64-v8a_armeabi-v7a-debug.apk` قرار می‌گیرد.
-- اگر خطای دسترسی (permission) روی پوشه‌ی `.buildozer` گرفتید، دستور را بدون `sudo` اجرا
-  کنید — Buildozer عمداً از اجرای کامل با root جلوگیری می‌کند.
+- **بار اول** دانلود SDK/NDK و کامپایل وابستگی‌ها می‌تواند **۲۰ تا ۴۵ دقیقه** طول بکشد
+  (نیاز به اینترنت پایدار). بارهای بعدی خیلی سریع‌تر است چون همه‌چیز کش می‌شود
+  (`~/android-sdk`، `.build-venv/`).
+- خروجی نهایی در `dist/*.apk` قرار می‌گیرد.
+- برای نصب مستقیم روی گوشی متصل با کابل (با USB Debugging فعال):
+  ```bash
+  adb install -r dist/*.apk
+  ```
 
-### نصب مستقیم روی گوشی متصل با کابل (اختیاری)
-
-با فعال‌بودن USB Debugging روی گوشی:
-
-```bash
-buildozer android deploy run
-```
-
-این هم می‌سازد، هم نصب می‌کند، هم مستقیم اجرا می‌کند — و لاگ زنده را هم نشان می‌دهد
-(`buildozer android logcat` برای دیدن لاگ‌ها هر زمان).
+> فایل `buildozer.spec` هنوز در پروژه نگه داشته شده (فقط برای مرجع/fallback اختیاری —
+> باگ escape شدنِ خط‌جدیدهایش هم برطرف شد) ولی مسیر build رسمی و توصیه‌شده همین
+> `build_apk.sh` است، نه Buildozer.
 
 ---
 
 ## ۳) ساخت APK بدون نیاز به Linux محلی (GitHub Actions — پیشنهاد می‌شود)
 
-یک Workflow آماده در `.github/workflows/build-apk.yml` گذاشته شده که APK را در فضای ابری
-گیت‌هاب (رایگان) می‌سازد — نیازی به نصب هیچ‌چیزی روی سیستم خودتان نیست:
+Workflow موجود در `.github/workflows/build-apk.yml` هم به‌روزرسانی شد و دیگر از Buildozer
+استفاده نمی‌کند — دقیقاً همان `p4a apk` بالا را روی یک ماشین اوبونتوی تمیز در فضای ابری
+گیت‌هاب (رایگان) اجرا می‌کند. نیازی به نصب هیچ‌چیزی روی سیستم خودتان نیست:
 
 1. یک ریپازیتوری جدید در GitHub بسازید و کل پوشه‌ی `nova_android` را push کنید.
 2. به تب **Actions** بروید → روی workflow با نام **Build NOVA APK** کلیک کنید →
    **Run workflow**.
 3. حدود ۱۵ تا ۲۵ دقیقه صبر کنید (اجرای اول کندتر است چون SDK/NDK دانلود می‌شود).
 4. وقتی اجرا سبز شد، پایین صفحه‌ی همان اجرا بخش **Artifacts** را باز کنید و
-   **nova-debug-apk** را دانلود کنید — همان فایل `.apk` قابل نصب روی گوشی است.
-
-این روش دقیقاً همان `buildozer android debug` را روی یک ماشین لینوکس تمیز اجرا می‌کند،
-فقط جای شما.
+   **NOVA-debug-APK** را دانلود کنید — همان فایل `.apk` قابل نصب روی گوشی است.
 
 ---
 
@@ -161,7 +174,8 @@ buildozer android deploy run
    دکمه‌ی صحبت کار کند.
 
 > این یک Debug APK است (برای تست شخصی امضا شده) — برای انتشار در Google Play باید بعداً
-> با `buildozer android release` و امضای رسمی (keystore) ساخته شود؛ فعلاً نیازی به آن نیست.
+> با `p4a apk --release ...` (بدون `--debug`) و امضای رسمی (keystore) ساخته شود؛ فعلاً
+> نیازی به آن نیست.
 
 ---
 
@@ -191,9 +205,15 @@ buildozer android deploy run
 
 ## محدودیت شناخته‌شده در این نسخه
 
-من (Claude) این پروژه را در یک sandbox بدون دسترسی به اینترنت ساختم، پس **خودم نتوانستم
-`buildozer android debug` را اجرا کنم** و یک فایل APK آماده برایتان پیوست کنم — چون این کار
-نیاز به دانلود چند گیگابایت Android SDK/NDK دارد. به همین دلیل روش شماره ۳ (GitHub Actions)
-را آماده کردم تا با یک کلیک، بدون نصب هیچ‌چیزی روی سیستم خودتان، APK واقعی و قابل‌نصب
-بگیرید. کدها را از نظر منطقی و سینتکسی بررسی کرده‌ام، ولی توصیه می‌کنم قبل از build اول
-مرحله‌ی «تست روی لپ‌تاپ» (بخش ۱) را هم انجام دهید تا هرگونه رفتار غیرمنتظره را زودتر ببینید.
+من (Claude) این پروژه را در یک sandbox بدون دسترسی به اینترنت و بدون Android SDK/NDK/Gradle
+نصب‌شده بررسی و آماده کردم، پس **خودم نتوانستم `build_apk.sh` را واقعاً اجرا کنم** و یک
+فایل APK آماده برایتان پیوست کنم — چون این کار نیاز به دانلود چند گیگابایت Android SDK/NDK
+دارد. تمام فایل‌های Python را با `python3 -m py_compile` از نظر سینتکسی چک کردم (بدون خطا)
+و منطق برنامه (که از قبل درست بود) دست‌نخورده مانده است — تغییرات فقط در لایه‌ی build بود
+(حذف کامل Buildozer، جایگزینی با `python-for-android` مستقیم که خودش Gradle + Android SDK
+را صدا می‌زند).
+
+به همین دلیل روش شماره ۳ (GitHub Actions) را آماده/به‌روزرسانی کردم تا با یک کلیک، بدون
+نصب هیچ‌چیزی روی سیستم خودتان، APK واقعی و قابل‌نصب بگیرید — یا می‌توانید `build_apk.sh`
+را روی یک ماشین Linux/WSL2 با اینترنت اجرا کنید. توصیه می‌کنم قبل از build اول مرحله‌ی
+«تست روی لپ‌تاپ» (بخش ۱) را هم انجام دهید تا هرگونه رفتار غیرمنتظره را زودتر ببینید.
