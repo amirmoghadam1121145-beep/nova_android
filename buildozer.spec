@@ -1,5 +1,5 @@
 [app]
-p4a.source_dir = .buildozer/android/platform/python-for-android
+
 
 title = NOVA
 package.name = nova
