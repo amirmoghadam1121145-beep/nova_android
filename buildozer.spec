@@ -1,1 +1,29 @@
-[app]\n\ntitle = NOVA\npackage.name = nova\npackage.domain = org.nova.assistant\n\nsource.dir = .\nsource.include_exts = py,png,jpg,kv,atlas,ttf\n\nversion = 0.1.0\n\n# python3,kivy: the app itself\n# plyer: battery / text-to-speech\n# pyjnius, android: direct Android API access (speech recognizer, intents)\nrequirements = python3,kivy==2.3.0,plyer==2.1.0,pyjnius,android\n\norientation = portrait\nfullscreen = 0\n\n# No custom icon/presplash for v1 -- Buildozer uses its default Kivy\n# icon so the very first build can't fail over a missing image file.\n# Add icon.filename / presplash.filename here later once you have real\n# artwork (see README.md "افزودن آیکون بعداً").\n\n# Microphone for voice input, internet for TTS/STT engine data if the\n# device needs to fetch a language pack, camera for the "camera" command.\nandroid.permissions = RECORD_AUDIO, INTERNET, CAMERA, MODIFY_AUDIO_SETTINGS\n\nandroid.api = 34\nandroid.minapi = 23\nandroid.ndk = 25b\nandroid.archs = arm64-v8a, armeabi-v7a\nandroid.allow_backup = True\n\n# Keep the app running only in the foreground for v1 (simple + battery\n# friendly); a persistent background service can be added later.\nandroid.wakelock = False\n\n[buildozer]\nlog_level = 2\nwarn_on_root = 1
+[app]
+
+title = NOVA
+package.name = nova
+package.domain = org.nova.assistant
+
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,ttf
+
+version = 0.1.0
+
+requirements = python3,kivy==2.3.0,plyer==2.1.0,pyjnius,android
+
+orientation = portrait
+fullscreen = 0
+
+android.permissions = RECORD_AUDIO,INTERNET,CAMERA,MODIFY_AUDIO_SETTINGS
+
+android.api = 34
+android.minapi = 23
+android.ndk = 25b
+android.archs = arm64-v8a,armeabi-v7a
+android.allow_backup = True
+android.wakelock = False
+
+[buildozer]
+
+log_level = 2
+warn_on_root = 1
