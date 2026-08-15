@@ -1,0 +1,18 @@
+# These are HOST-machine dependencies -- for two purposes only:
+#
+#   1) running `python main.py` on a laptop to smoke-test NOVA's logic
+#      before building an APK (falls back to console input + print/
+#      pyttsx3 automatically, see nova/voice/*_service.py)
+#   2) running buildozer itself to build the APK
+#
+# They are NOT what ships inside the APK. What actually gets bundled
+# into the Android app is controlled separately by the
+# `requirements = ...` line in buildozer.spec (python3, kivy, plyer,
+# pyjnius, android), which python-for-android downloads and compiles
+# for the phone's CPU architecture during `buildozer android debug`.
+
+kivy==2.3.0
+plyer==2.1.0
+pyttsx3==2.90       # optional, desktop test-mode TTS fallback only
+buildozer==1.5.0
+cython==0.29.36
